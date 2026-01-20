@@ -1,28 +1,52 @@
-// config.js
-import fs from 'fs'
-import 'dotenv/config'
+import { getConfig, persistDefault } from './lib/configdb.js'
 
-const file = './lib/configdb.json'
-
-function loadRaw() {
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : { config: {} }
+const defaults = {
+  PREFIX: '.',
+  MODE: 'public',
+  CREATOR: '2349133354644t',
+  OWNER_NUMBERS: ['2349133354644'],
+  MONGODB_URI: '',
+  BOT_NAME: 'Xylo-MD',
+  FOOTER: '© Powered by DavidX',
+  ANTIDELETE_MODE: 'off',
+  AUTOVIEW_STATUS: false,
+  AUTOLIKE_STATUS: false
 }
 
-function get(key, fallback) {
-  const db = loadRaw()
-  return db.config?.[key] ?? fallback
+let cache = {}
+
+const SESSION_ID = process.env.SESSION_ID || ''
+cache.SESSION_ID = SESSION_ID 
+
+async function initConfig() {
+  for (const [key, defValue] of Object.entries(defaults)) {
+    let value = await getConfig(key.toLowerCase())
+    if (value === undefined) {
+      value = defValue
+      await persistDefault(key, value)
+      console.log(`[Config ✅] ${key} = ${value} (default → saved)`)
+    } else {
+      console.log(`[Config ✅] ${key} = ${value} (DB)`)
+    }
+    cache[key.toUpperCase()] = value
+  }
 }
 
-export default {
-  get PREFIX() { return get('prefix', '!') },
-  get MODE() { return get('mode', 'public') },
-  get CREATOR() { return get('creator', '2349133354644@s.whatsapp.net') },
-  get OWNER_NUMBERS() { return get('owner_numbers', ['2349133354644']) },
-  get MONGODB_URI() { return get('mongodb_uri', '') },
-  get BOT_NAME() { return get('bot_name', 'Xylo-MD') },
-  get FOOTER() { return get('footer', '© Powered by DavidX') },
-  get ANTIDELETE_MODE() { return get('antidelete_mode', 'off') },
-  get AUTOVIEW_STATUS() { return get('autoview_status', false) },
-  get AUTOLIKE_STATUS() { return get('autolike_status', false) },
-  get SESSION_ID() { return process.env.SESSION_ID || '' }
+export function updateCache(key, value) {
+  cache[key.toUpperCase()] = value
 }
+
+const config = new Proxy({}, {
+  get(_, prop) {
+    return cache[prop.toUpperCase()]
+  },
+  set() {
+    throw new Error('Use setConfig() to change values, not direct assignment')
+  }
+})
+
+export default config
+
+initConfig().catch(err => {
+  console.error('🚫 Failed to initialize config:', err)
+})
