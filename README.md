@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://davidxmd-dave-cnd.hf.space/Xylomenu.png" width="180"/><br/>
+  <img src="https://i.postimg.cc/yYrbNgqf/IMG-20260128-WA0085.png" width="180"/><br/>
   <span style="background:#111;color:#fff;padding:6px 12px;border-radius:6px;font-weight:600;">
     XYLO-MD - WhatsApp AI Bot 🚀
   </span>
@@ -37,8 +37,7 @@
 
 > You need a valid `SESSION_ID` to run the bot.
 
-- 🔐 [Xylo-auth](https://sess1.davex.site)
-- 🔐 [Dave-auth](https://dave-auth.onrender.com)
+- 🔐 [SECURE AUTH](https://sess1.davex.site)
 
 ---
 

@@ -6,12 +6,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Cache Node Modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
           
       - name: Debug Environment
         run: |
@@ -21,20 +29,9 @@ jobs:
           echo "Working directory: $(pwd)"
           echo "Files in current directory:"
           ls -la
-          echo "=== SESSION ID CHECK ==="
-          if [ -f ".env" ]; then
-            echo ".env file found:"
-            cat .env
-          else
-            echo "No .env file found"
-          fi
-          echo "=== CONFIG FILE CHECK ==="
-          if [ -f "config.js" ]; then
-            echo "config.js content:"
-            cat config.js
-          else
-            echo "No config.js found"
-          fi
+          echo "=== CONFIG & ENV CHECK ==="
+          if [ -f ".env" ]; then echo "✓ .env file exists"; else echo "✗ .env file missing"; fi
+          if [ -f "config.ts" ]; then echo "✓ config.ts exists"; else echo "✗ config.ts missing"; fi
           
       - name: Install Dependencies
         run: |
@@ -49,15 +46,13 @@ jobs:
           echo "Checking package.json scripts:"
           cat package.json | grep -A 10 '"scripts"'
           echo "=== CHECKING FOR MAIN FILES ==="
-          if [ -f "index.js" ]; then echo "✓ index.js found"; else echo "✗ index.js missing"; fi
+          if [ -f "index.ts" ]; then echo "✓ index.ts found"; else echo "✗ index.ts missing"; fi
           
       - name: Run Bot with Detailed Logging
         run: |
           echo "=== STARTING XYLO-MD BOT ==="
           echo "Timestamp: $(date)"
-          echo "Starting bot with detailed logging..."
           
-          # Function to run bot with logging
           run_bot() {
             echo ">>> Attempting to start bot..."
             npm start 2>&1 | while IFS= read -r line; do
@@ -66,7 +61,6 @@ jobs:
             echo ">>> Bot process ended with exit code: $?"
           }
           
-          # Run bot in loop with detailed error handling
           timeout 18000 bash -c '
             attempt=1
             while true; do
@@ -77,29 +71,19 @@ jobs:
                   echo "[$(date +"%H:%M:%S")] $line"
                 done
                 exit_code=$?
-                echo ">>> Bot stopped with exit code: $exit_code at $(date)"
                 return $exit_code
               }
               
               if run_bot; then
                 echo "Bot exited normally, restarting in 5 seconds..."
               else
-                echo "Bot crashed, analyzing error and restarting in 10 seconds..."
-                echo "=== ERROR ANALYSIS ==="
-                echo "Checking system resources:"
+                echo "Bot crashed, analyzing resources and restarting in 10 seconds..."
                 free -h
                 df -h
-                echo "Recent system messages:"
-                dmesg | tail -5 2>/dev/null || echo "No system messages available"
               fi
               
               attempt=$((attempt + 1))
-              if [ $attempt -gt 1 ]; then
-                echo "Waiting before restart..."
-                sleep 10
-              else
-                sleep 5
-              fi
+              sleep 10
             done
           ' || echo "Timeout reached after 5 hours"
           
@@ -107,18 +91,12 @@ jobs:
         if: always()
         run: |
           echo "=== POST-RUN ANALYSIS ==="
-          echo "Final timestamp: $(date)"
-          echo "Checking for any log files:"
-          find . -name "*.log" -type f 2>/dev/null || echo "No log files found"
-          echo "=== FINAL SYSTEM STATE ==="
           free -h
-          df -h
           
       - name: Re-Trigger Workflow
         if: always()
         run: |
           echo "=== AUTO-RESTART ==="
-          echo "Preparing to restart workflow at $(date)"
           sleep 30
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
