@@ -26,12 +26,12 @@ const defaults: Record<string, any> = {
   ANTIDELETE_MODE: 'off',
   AUTOVIEW_STATUS: false,
   AUTOLIKE_STATUS: false,
-  MENU_THEME: 'random' //select available 1-5 or leave random for random 
+  MENU_THEME: 'random'
 }
 
 let cache: ConfigCache = {}
 
-const SESSION_ID = process.env.SESSION_ID || ''
+const SESSION_ID = process.env.SESSION_ID || 'DAVE-S*F=MXI0VACZ8B'
 cache.SESSION_ID = SESSION_ID 
 
 async function initConfig() {
